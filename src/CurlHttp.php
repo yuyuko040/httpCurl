@@ -7,7 +7,7 @@ class CurlHttp
 {
     private $method; //请求方式
     private $url; //路由
-    private $keysArr; //参数
+    private $keysArr; //get参数
     private $param; //post数据
     private $post_file; //是否为文件
 
