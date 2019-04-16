@@ -4,6 +4,7 @@
 new \App\CurlHttp\CurlHttp();
 
 传参
+    
     $method; //请求方式 必须
     
     $url; //路由 必须
