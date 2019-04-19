@@ -1,30 +1,44 @@
 <?php
 namespace App\CurlHttp;
 
-use App\Exceptions\ApiException;
 
 class CurlHttp
 {
+
+    private $domain; //域名
     private $method; //请求方式
     private $url; //路由
     private $keysArr; //get参数
     private $param; //post数据
     private $post_file; //是否为文件
 
-    public function __construct($method, $route, $keysArr=[], $param=[], $post_file=false)
+
+    /**
+     * 构造函数
+     * @param $domain string //域名 如'http://www.baidu.com'
+     * @param $method string //请求方式 如 'POST' 必须大写
+     * @param $route string //路由 如 '/api/user/'
+     * @param $keysArr array //get请求参数 如 ' ['name' => '小李', 'age' => 2] '
+     * @param $param array //post请求参数 如 ' ['name' => '小李', 'age' => 2] '
+     * @param $post_file bool //是否为文件
+     *
+     */
+    public function __construct($domain, $method, $route, $keysArr=[], $param=[], $post_file=false)
     {
-        $this->url = env('YUJIAN_HOTEL_API').$route;
+        $this->domain = $domain;
+        $this->url = $domain.$route;
         $this->keysArr = $keysArr;
         $this->param = $param;
         $this->post_file = $post_file;
         $this->method = $method;
+
     }
 
     /**
      * get获取数据
      *
      * @return string
-     * @throws ApiException
+     *
      */
     public function http_get()
     {
@@ -65,11 +79,11 @@ class CurlHttp
         $aStatus = curl_getinfo($oCurl);
         curl_close($oCurl);
 
-        if ( $aStatus["http_code"] == 500 ) {
-            throw new ApiException('服务器错误!');
+        if ( $aStatus["http_code"] != 200 ) {
+            var_dump('服务器报错! 错误代码为' . $aStatus["http_code"]);die;
         }
 
-        return response()->json(\GuzzleHttp\json_decode($sContent), $aStatus["http_code"], array(), JSON_UNESCAPED_UNICODE);
+        return $this->json_decode($sContent);
 
     }
 
@@ -77,7 +91,7 @@ class CurlHttp
      * post获取数据
      *
      * @return string
-     * @throws ApiException
+     *
      */
     public function http_post()
     {
@@ -95,11 +109,7 @@ class CurlHttp
         if (is_string($param) || $post_file) {
             $strPOST = $param;
         } else {
-            $aPOST = array();
-            foreach ($param as $key => $val) {
-                $aPOST[] = $key . "=" . urlencode($val);
-            }
-            $strPOST = join("&", $aPOST);
+            $strPOST = http_build_query($param);
         }
         curl_setopt($oCurl, CURLOPT_URL, $url);
         curl_setopt($oCurl, CURLOPT_RETURNTRANSFER, 1);
@@ -141,11 +151,11 @@ class CurlHttp
         $aStatus = curl_getinfo($oCurl);
         curl_close($oCurl);
 
-        if ( $aStatus["http_code"] == 500 ) {
-            throw new ApiException('服务器错误!');
+        if ( $aStatus["http_code"] != 200 ) {
+            var_dump('服务器报错! 错误代码为' . $aStatus["http_code"]);die;
         }
 
-        return response()->json(\GuzzleHttp\json_decode($sContent), $aStatus["http_code"], array(), JSON_UNESCAPED_UNICODE);
+        return $this->json_decode($sContent);
 
     }
 
@@ -153,7 +163,7 @@ class CurlHttp
      * 链接绑定参数
      * @param $baseURL string 链接
      * @param $keysArr array 参数
-     * @return bool|mixed
+     * @return string
      */
     public function combineURL($baseURL,$keysArr)
     {
@@ -173,5 +183,24 @@ class CurlHttp
 
         return $combined;
     }
+
+    /**
+     * json转化为字符串
+     * @param $json string json数据
+     *
+     * @return string
+     */
+    function json_decode($json)
+    {
+        $data = \json_decode($json, false, 512, 0);
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new \InvalidArgumentException(
+                'json_decode error: ' . json_last_error_msg()
+            );
+        }
+
+        return $data;
+    }
+
 
 }
